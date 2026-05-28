@@ -85,15 +85,13 @@ export async function logout(req, res) {
 //Оновлення користувача
 export async function getCurrentUser(req, res) {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "Користувач не знайдений" });
-    }
-    res.json({username: user.username, email: user.email, avatar: user.avatar });
+    const { id, username, email } = req.user;
+    
+    res.status(200).json({ username, email });
   } catch (err) {
     res.status(500).json({ message: "Помилка сервера" });
   }
-}   
+}
 //Оновлення токена
 export async function refreshToken(req, res) {
   try {
@@ -116,3 +114,4 @@ res.json([{ accessToken, refreshToken: newRefreshToken }]);
     res.status(500).json({ message: "Помилка сервера" });
   }
 }   
+
