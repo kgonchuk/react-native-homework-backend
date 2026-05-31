@@ -33,19 +33,37 @@ export function generateToken(user) {
 
 //Реєстрація користувача
 export async function register(req, res) {
+  console.log("Отримано запит у контролер!");
+  console.log("Файл:", req.file);
+  console.log("Тіло:", req.body);
   try {
+    if (!req.body) {
+      return res.status(400).json({ message: "Дані не отримано" });
+    }
     const { username, email, password } = req.body;
+
+  //   console.log("BODY:", req.body); // <-- ЩО ТУТ?
+  // console.log("FILE:", req.file); // <-- ЩО ТУТ?
+   const avatarUrl = req.file ? req.file.path.replace(/\\/g, "/") : null;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Користувач з таким email вже існує" });
     }
     const hashedPassword= await bcrypt.hash(password,10);
-    const newUser = new User({ username, email, password: hashedPassword });
+    const newUser = new User({ username, email, password: hashedPassword, avatar: avatarUrl });
     await newUser.save();
     const { accessToken, refreshToken } = generateToken(newUser);
     await User.findByIdAndUpdate(newUser._id, { token: refreshToken });
-    res.status(201).json({ accessToken, refreshToken, user: { id: newUser._id, username: newUser.username, email: newUser.email } });
-
+   res.status(201).json({ 
+  accessToken, 
+  refreshToken, 
+  user: { 
+    id: newUser._id, 
+    username: newUser.username, 
+    email: newUser.email,
+    avatar: newUser.avatar
+  } 
+});
   } catch (err) {
      console.log("реальна помилка",err);
     res.status(500).json({ message: "Помилка сервера" });
@@ -66,7 +84,16 @@ export async function login(req, res) {
     }
     const { accessToken, refreshToken } = generateToken(user);
     await User.findByIdAndUpdate(user._id, { token: refreshToken });
-    res.json({ accessToken, refreshToken, user: { id: user._id, username: user.username, email: user.email } });
+    res.json({ 
+  accessToken, 
+  refreshToken, 
+  user: { 
+    id: user._id, 
+    username: user.username, 
+    email: user.email, 
+    avatar: user.avatar 
+  } 
+});
   } catch (err) {
     res.status(500).json({ message: "Помилка сервера" });
   }
@@ -85,9 +112,15 @@ export async function logout(req, res) {
 //Оновлення користувача
 export async function getCurrentUser(req, res) {
   try {
-    const { id, username, email } = req.user;
-    
-    res.status(200).json({ username, email });
+   
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Користувач не знайдений" });
+
+    res.status(200).json({ 
+        username: user.username, 
+        email: user.email, 
+        avatar: user.avatar
+    });
   } catch (err) {
     res.status(500).json({ message: "Помилка сервера" });
   }
@@ -115,3 +148,20 @@ res.json([{ accessToken, refreshToken: newRefreshToken }]);
   }
 }   
 
+
+//Оновлення аватара
+export const updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "Файл не знайдено" });
+    const avatarUrl = req.file.path.replace(/\\/g, "/"); 
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id, 
+      { avatar: avatarUrl }, 
+      { new: true } 
+    );
+
+    res.json({ avatar: updatedUser.avatar });
+  } catch (err) {
+    res.status(500).json({ message: "Помилка оновлення аватара" });
+  }
+};

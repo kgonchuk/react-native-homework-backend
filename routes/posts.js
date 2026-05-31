@@ -1,42 +1,44 @@
-// routes/posts.js
-import express from "express";
+
+import express from "express"; // Обов'язково імпортуйте express
 import multer from "multer";
 import Post from "../models/Post.js";
-import auth from "../middleware/auth.js";
+import authenticate from "../middleware/auth.js";
 
-const router = express.Router();
-
+const router = express.Router(); // <--- ЦЕЙ РЯДОК ПРОПУЩЕНО!
 const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (_, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
   },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
 });
-
 const upload = multer({ storage });
+router.post("/", authenticate, upload.single("photo"), async (req, res) => {
+  console.log("ХТО КОРИСТУВАЧ?", req.user);
+  try {
 
-// create post
-router.post("/", auth, upload.single("photo"), async (req, res) => {
-  const { name, place, latitude, longitude } = req.body;
+    const { title, place, latitude, longitude } = req.body;
+    console.log("Чи є файл?", req.file);
+    if (!title || !req.file) {
+       return res.status(400).json({ message: "Заголовок та фото є обов'язковими" });
+    }
 
-  const post = await Post.create({
-    name,
-    place,
-    photo: `/uploads/${req.file.filename}`,
-    location: {
-      latitude,
-      longitude,
-    },
-    user: req.userId,
-  });
+    const post = await Post.create({
+      title,
+      image: `/uploads/${req.file.filename}`, 
+      location: {
+        name: place,
+        latitude: parseFloat(latitude) || 0, // Якщо latitude не передано, встановлюємо 0
+        longitude: parseFloat(longitude) || 0, // Якщо longitude не передано, встановлюємо 0
+      },
+     author: "6a1ad4615c3ab598d630789c",
+    });
 
-  res.json(post);
+    res.status(201).json(post);
+  } catch (err) {
+    console.error("Помилка при збереженні:", err);
+    res.status(500).json({ message: err.message });
+  }
 });
-
-// get posts
-router.get("/", auth, async (req, res) => {
-  const posts = await Post.find().populate("user");
-  res.json(posts);
-});
-
 export default router;
