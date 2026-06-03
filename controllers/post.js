@@ -5,21 +5,19 @@ export async function createPost(req, res) {
   try {
     const { title, place, content, latitude, longitude } = req.body;
     
-    // Перевірте назву поля в multer (upload.single('photo')?)
     if (!req.file) {
       return res.status(400).json({ message: "Файл не передано" });
     }
 
-    const imageUrl = req.file.path.replace(/\\/g, "/");
+    const imageUrl = req.file.path.replace(/\\/g, "/"); // Виправляємо шлях для Windows
     
     const post = new Post({ 
       author: req.user.id, 
       title, 
       place, 
-    //   content, 
       latitude, 
       longitude, 
-      image: imageUrl // Перевірте, чи точно поле в схемі називається 'image'
+      image: imageUrl 
     });
 
     const savedPost = await post.save();

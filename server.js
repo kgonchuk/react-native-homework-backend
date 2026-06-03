@@ -23,18 +23,19 @@ app.use((req, res, next) => {
 });
 
 
-app.use("/uploads", express.static("uploads"));
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/uploads", express.static("uploads"));
 
 app.use((req, res) => {
-  console.log("Отримано запит на неіснуючий шлях:", req.url);
+console.log("ЗАПИТ НЕ ЗНАЙДЕНО ДЛЯ:", req.method, req.url);
   res.status(404).json({ message: "Not found" });
 });
 
 console.log("наша база даних:", process.env.MONGO_URI);
-mongoose.connect(process.env.MONGO_URI, {dbName: "db_users"})
+mongoose.connect(process.env.MONGO_URI, { dbName: "db_users" })
   .then((conn) => console.log("DB connected to", conn.connection.name))
   .catch(err => console.log(err));
 
