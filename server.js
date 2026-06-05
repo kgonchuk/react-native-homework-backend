@@ -29,6 +29,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/uploads", express.static("uploads"));
 
+
 app.use((req, res) => {
 console.log("ЗАПИТ НЕ ЗНАЙДЕНО ДЛЯ:", req.method, req.url);
   res.status(404).json({ message: "Not found" });
