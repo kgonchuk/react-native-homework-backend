@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import User from "./User.js"; 
 
 const commentSchema = new mongoose.Schema({
   author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
