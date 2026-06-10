@@ -2,19 +2,28 @@ import Post from "../models/Post.js";
 
 export async function createPost(req, res) {
   try {
-    const { title, place, content, latitude, longitude } = req.body;
+   const { title, place, latitude, longitude, name } = req.body;
     if (!req.file) {
       return res.status(400).json({ message: "Файл не передано" });
     }
 
+    const lat = parseFloat(latitude);
+    const lon = parseFloat(longitude);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      return res.status(400).json({ message: "Некоректні координати" });
+    }
     const imageUrl = req.file.path.replace(/\\/g, "/"); 
     const post = new Post({ 
       author: req.user.id, 
       title, 
       place, 
-      latitude, 
-      longitude, 
-      image: imageUrl 
+      image: imageUrl,
+      location: {
+        name: name || "Невідома локація", 
+        latitude: lat,
+        longitude: lon
+      }
     });
 
     const savedPost = await post.save();
@@ -45,23 +54,15 @@ const newCommentData = { text, author: authorId, postId };
     if (!updatedPost) {
       return res.status(404).json({ message: "Пост не знайдений" });
     }
-//     const populatedPost = await Post.findById(postId).populate({
-//   path: "comments.author",
-//   select: "username avatar email" // ДОДАЙТЕ email, щоб побачити, чи взагалі працює select
-// });
 
 const populatedPost = await Post.findById(postId).populate({
   path: "comments.author",
-  select: "username avatar email", // Явно запитуємо аватар
-  model: "User"                    // Явно вказуємо модель
+  select: "username avatar email", 
+  model: "User"                    
 });
 
 const validComments = populatedPost.comments.filter(c => c && c.author);
 const newComment = validComments[validComments.length - 1];
-
-// Перевірка: чи прийшов аватар у новому коментарі?
-console.log("DEBUG POPULATED COMMENT:", newComment.author); 
-
 res.status(201).json(newComment);
   } catch (err) {
     console.error("Помилка:", err);
